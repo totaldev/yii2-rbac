@@ -1,46 +1,32 @@
 <?php
 
-namespace yii2mod\rbac\tests\models;
+namespace totaldev\yii\rbac\tests\models;
 
+use totaldev\yii\rbac\models\AssignmentModel;
+use totaldev\yii\rbac\models\AuthItemModel;
+use totaldev\yii\rbac\tests\data\User;
+use totaldev\yii\rbac\tests\TestCase;
 use Yii;
 use yii\base\Exception;
 use yii\rbac\Item;
-use yii2mod\rbac\models\AssignmentModel;
-use yii2mod\rbac\models\AuthItemModel;
-use yii2mod\rbac\tests\data\User;
-use yii2mod\rbac\tests\TestCase;
 
 /**
  * Class AssignmentTest
  *
- * @package yii2mod\rbac\tests\models
+ * @package totaldev\yii\rbac\tests\models
  */
 class AssignmentTest extends TestCase
 {
     /**
      * @var string
      */
-    private $_roleName = 'admin';
-
+    private $_permissionName = 'viewArticles';
     /**
      * @var string
      */
-    private $_permissionName = 'viewArticles';
+    private $_roleName = 'admin';
 
     // Tests :
-
-    public function testAssignRole()
-    {
-        $this->createRole();
-
-        $user = User::find()->one();
-        $model = new AssignmentModel($user);
-
-        $this->assertTrue($model->assign([$this->_roleName]));
-        $this->assertArrayHasKey($this->_roleName, Yii::$app->authManager->getAssignments($user->id));
-
-        return $model;
-    }
 
     public function testAssignPermission()
     {
@@ -51,6 +37,19 @@ class AssignmentTest extends TestCase
 
         $this->assertTrue($model->assign([$this->_permissionName]));
         $this->assertArrayHasKey($this->_permissionName, Yii::$app->authManager->getAssignments($user->id));
+
+        return $model;
+    }
+
+    public function testAssignRole()
+    {
+        $this->createRole();
+
+        $user = User::find()->one();
+        $model = new AssignmentModel($user);
+
+        $this->assertTrue($model->assign([$this->_roleName]));
+        $this->assertArrayHasKey($this->_roleName, Yii::$app->authManager->getAssignments($user->id));
 
         return $model;
     }
@@ -69,16 +68,6 @@ class AssignmentTest extends TestCase
     }
 
     /**
-     * @depends testAssignRole
-     *
-     * @param AssignmentModel $model
-     */
-    public function testRevokeRole(AssignmentModel $model)
-    {
-        $this->assertTrue($model->revoke([$this->_roleName]));
-    }
-
-    /**
      * @depends testAssignPermission
      *
      * @param AssignmentModel $model
@@ -89,19 +78,13 @@ class AssignmentTest extends TestCase
     }
 
     /**
-     * Create role for testing purposes
+     * @depends testAssignRole
      *
-     * @throws Exception
+     * @param AssignmentModel $model
      */
-    private function createRole()
+    public function testRevokeRole(AssignmentModel $model)
     {
-        $model = new AuthItemModel();
-        $model->type = Item::TYPE_ROLE;
-        $model->name = $this->_roleName;
-
-        if (!$model->save()) {
-            throw new Exception("A Role '{$this->_roleName}' has not been created.");
-        }
+        $this->assertTrue($model->revoke([$this->_roleName]));
     }
 
     /**
@@ -117,6 +100,22 @@ class AssignmentTest extends TestCase
 
         if (!$model->save()) {
             throw new Exception("A Permission '{$this->_permissionName}' has not been created.");
+        }
+    }
+
+    /**
+     * Create role for testing purposes
+     *
+     * @throws Exception
+     */
+    private function createRole()
+    {
+        $model = new AuthItemModel();
+        $model->type = Item::TYPE_ROLE;
+        $model->name = $this->_roleName;
+
+        if (!$model->save()) {
+            throw new Exception("A Role '{$this->_roleName}' has not been created.");
         }
     }
 }

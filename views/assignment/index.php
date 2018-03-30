@@ -2,34 +2,35 @@
 
 use yii\grid\GridView;
 use yii\helpers\ArrayHelper;
-use yii\helpers\Html;
 use yii\widgets\Pjax;
 
 /* @var $this \yii\web\View */
 /* @var $gridViewColumns array */
 /* @var $dataProvider \yii\data\ArrayDataProvider */
-/* @var $searchModel \yii2mod\rbac\models\search\AssignmentSearch */
+/* @var $searchModel \totaldev\yii\rbac\models\search\AssignmentSearch */
 
 $this->title = Yii::t('yii2mod.rbac', 'Assignments');
 $this->params['breadcrumbs'][] = $this->title;
-$this->render('/layouts/_sidebar');
 ?>
-<div class="assignment-index">
+<div class="box">
+    <div class="box-body">
 
-    <h1><?php echo Html::encode($this->title); ?></h1>
+        <?php Pjax::begin(['timeout' => 5000]); ?>
 
-    <?php Pjax::begin(['timeout' => 5000]); ?>
+        <?= GridView::widget([
+            'dataProvider' => $dataProvider,
+            'filterModel' => $searchModel,
+            'columns' => ArrayHelper::merge([
+                [
+                    'class' => 'yii\grid\ActionColumn',
+                    'template' => '{view}',
+                    'headerOptions' => [
+                        'width' => 70,
+                    ],
+                ]
+            ], $gridViewColumns),
+        ]); ?>
 
-    <?php echo GridView::widget([
-        'dataProvider' => $dataProvider,
-        'filterModel' => $searchModel,
-        'columns' => ArrayHelper::merge($gridViewColumns, [
-            [
-                'class' => 'yii\grid\ActionColumn',
-                'template' => '{view}',
-            ],
-        ]),
-    ]); ?>
-
-    <?php Pjax::end(); ?>
+        <?php Pjax::end(); ?>
+    </div>
 </div>

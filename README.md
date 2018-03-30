@@ -44,7 +44,7 @@ Once the extension is installed, simply modify your application configuration as
 return [
     'modules' => [
         'rbac' => [
-            'class' => 'yii2mod\rbac\Module',
+            'class' => 'totaldev\yii\rbac\Module',
         ],
     ],
     'components' => [
@@ -86,7 +86,7 @@ http://localhost/path/to/index.php/rbac/assignment
 
 1) For applying rules only for `controller` add the following code:
 ```php
-use yii2mod\rbac\filters\AccessControl;
+use totaldev\yii\rbac\filters\AccessControl;
 
 class ExampleController extends Controller 
 {
@@ -108,7 +108,7 @@ class ExampleController extends Controller
 ```php
 
 use Yii;
-use yii2mod\rbac\filters\AccessControl;
+use totaldev\yii\rbac\filters\AccessControl;
 
 /**
  * Class Module
@@ -132,9 +132,9 @@ class Module extends \yii\base\Module
 
 'modules' => [
     'rbac' => [
-        'class' => 'yii2mod\rbac\Module',
+        'class' => 'totaldev\yii\rbac\Module',
         'as access' => [
-            'class' => yii2mod\rbac\filters\AccessControl::class
+            'class' => totaldev\yii\rbac\filters\AccessControl::class
         ],
     ]
 ]
@@ -148,7 +148,7 @@ class Module extends \yii\base\Module
     ...
 ],
 'as access' => [
-    'class' => yii2mod\rbac\filters\AccessControl::class,
+    'class' => totaldev\yii\rbac\filters\AccessControl::class,
     'allowActions' => [
         'site/*',
         'admin/*',
@@ -197,7 +197,7 @@ To be able create the migrations, you need to add the following code to your con
 // console.php
 'modules' => [
     'rbac' => [
-        'class' => 'yii2mod\rbac\ConsoleModule'
+        'class' => 'totaldev\yii\rbac\ConsoleModule'
     ]
 ]
 ```
@@ -236,7 +236,7 @@ The above command will create a new PHP class file named m160817_085702_create_r
 ```php
 <?php
 
-use yii2mod\rbac\migrations\Migration;
+use totaldev\yii\rbac\migrations\Migration;
 
 class m160817_085702_create_role_admin extends Migration
 {
@@ -259,7 +259,7 @@ The following code shows how you may implement the migration class to create a `
 ```php
 <?php
 
-use yii2mod\rbac\migrations\Migration;
+use totaldev\yii\rbac\migrations\Migration;
 
 class m160817_085702_create_role_admin extends Migration
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace yii2mod\rbac\models\search;
+namespace totaldev\yii\rbac\models\search;
 
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
@@ -8,7 +8,7 @@ use yii\data\ActiveDataProvider;
 /**
  * Class AssignmentSearch
  *
- * @package yii2mod\rbac\models\search
+ * @package totaldev\yii\rbac\models\search
  */
 class AssignmentSearch extends Model
 {
@@ -16,16 +16,14 @@ class AssignmentSearch extends Model
      * @var string user id
      */
     public $id;
-
-    /**
-     * @var string username
-     */
-    public $username;
-
     /**
      * @var int the default page size
      */
     public $pageSize = 25;
+    /**
+     * @var string username
+     */
+    public $username;
 
     /**
      * @inheritdoc

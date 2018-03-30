@@ -1,6 +1,6 @@
 <?php
 
-namespace yii2mod\rbac\tests\data;
+namespace totaldev\yii\rbac\tests\data;
 
 use yii\db\ActiveRecord;
 use yii\web\IdentityInterface;
@@ -12,24 +12,6 @@ use yii\web\IdentityInterface;
  */
 class User extends ActiveRecord implements IdentityInterface
 {
-    /**
-     * @inheritdoc
-     */
-    public static function tableName()
-    {
-        return 'user';
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function rules()
-    {
-        return [
-            [['username', 'email'], 'required'],
-        ];
-    }
-
     /**
      * @inheritdoc
      */
@@ -49,9 +31,9 @@ class User extends ActiveRecord implements IdentityInterface
     /**
      * @inheritdoc
      */
-    public function getId()
+    public static function tableName()
     {
-        return $this->getPrimaryKey();
+        return 'user';
     }
 
     /**
@@ -60,6 +42,24 @@ class User extends ActiveRecord implements IdentityInterface
     public function getAuthKey()
     {
         // TODO: Implement getAuthKey() method.
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getId()
+    {
+        return $this->getPrimaryKey();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rules()
+    {
+        return [
+            [['username', 'email'], 'required'],
+        ];
     }
 
     /**

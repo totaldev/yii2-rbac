@@ -1,21 +1,21 @@
 <?php
 
-namespace yii2mod\rbac\tests\models;
+namespace totaldev\yii\rbac\tests\models;
 
-use yii2mod\rbac\models\RouteModel;
-use yii2mod\rbac\tests\TestCase;
+use totaldev\yii\rbac\models\RouteModel;
+use totaldev\yii\rbac\tests\TestCase;
 
 /**
  * Class RouteTest
  *
- * @package yii2mod\rbac\tests\models
+ * @package totaldev\yii\rbac\tests\models
  */
 class RouteTest extends TestCase
 {
     public function testGetAppRoutes()
     {
         $model = new RouteModel();
-        $routes = $model->getAppRoutes();
+        $routes = $model->getAllRoutes();
 
         $this->assertCount(34, $routes);
         $this->assertContains('/rbac/assignment/index', $routes);

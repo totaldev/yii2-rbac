@@ -1,12 +1,13 @@
 <?php
 
-namespace yii2mod\rbac\migrations;
+namespace totaldev\yii\rbac\migrations;
 
+use totaldev\yii\rbac\components\DbManager;
 use yii\base\Component;
+use yii\base\InvalidArgumentException;
 use yii\base\InvalidParamException;
 use yii\db\MigrationInterface;
 use yii\di\Instance;
-use yii\rbac\DbManager;
 use yii\rbac\Item;
 use yii\rbac\Permission;
 use yii\rbac\Role;
@@ -15,7 +16,7 @@ use yii\rbac\Rule;
 /**
  * Class Migration
  *
- * @package yii2mod\rbac\migrations
+ * @package totaldev\yii\rbac\migrations
  */
 class Migration extends Component implements MigrationInterface
 {
@@ -23,6 +24,32 @@ class Migration extends Component implements MigrationInterface
      * @var string|DbManager The auth manager component ID that this migration should work with
      */
     public $authManager = 'authManager';
+
+    /**
+     * @inheritdoc
+     */
+    public function down()
+    {
+        $transaction = $this->authManager->db->beginTransaction();
+        try {
+            if ($this->safeDown() === false) {
+                $transaction->rollBack();
+
+                return false;
+            }
+            $transaction->commit();
+            $this->authManager->invalidateCache();
+
+            return true;
+        } catch (\Exception $e) {
+            echo "Rolling transaction back\n";
+            echo 'Exception: ' . $e->getMessage() . ' (' . $e->getFile() . ':' . $e->getLine() . ")\n";
+            echo $e->getTraceAsString() . "\n";
+            $transaction->rollBack();
+
+            return false;
+        }
+    }
 
     /**
      * Initializes the migration.
@@ -33,6 +60,26 @@ class Migration extends Component implements MigrationInterface
         $this->authManager = Instance::ensure($this->authManager, DbManager::class);
 
         parent::init();
+    }
+
+    /**
+     * This method contains the logic to be executed when removing this migration.
+     *
+     * @return bool return a false value to indicate the migration fails
+     * and should not proceed further. All other return values mean the migration succeeds
+     */
+    public function safeDown()
+    {
+    }
+
+    /**
+     * This method contains the logic to be executed when applying this migration.
+     *
+     * @return bool return a false value to indicate the migration fails
+     * and should not proceed further. All other return values mean the migration succeeds
+     */
+    public function safeUp()
+    {
     }
 
     /**
@@ -62,49 +109,40 @@ class Migration extends Component implements MigrationInterface
     }
 
     /**
-     * @inheritdoc
+     * Adds child.
+     *
+     * @param Item|string $parent Either name or Item instance which is parent
+     * @param Item|string $child Either name or Item instance which is child
      */
-    public function down()
+    protected function addChild($parent, $child)
     {
-        $transaction = $this->authManager->db->beginTransaction();
-        try {
-            if ($this->safeDown() === false) {
-                $transaction->rollBack();
-
-                return false;
-            }
-            $transaction->commit();
-            $this->authManager->invalidateCache();
-
-            return true;
-        } catch (\Exception $e) {
-            echo "Rolling transaction back\n";
-            echo 'Exception: ' . $e->getMessage() . ' (' . $e->getFile() . ':' . $e->getLine() . ")\n";
-            echo $e->getTraceAsString() . "\n";
-            $transaction->rollBack();
-
-            return false;
+        if (is_string($parent)) {
+            $parent = $this->findItem($parent);
         }
+        if (is_string($child)) {
+            $child = $this->findItem($child);
+        }
+        echo "    > adding $child->name as child to $parent->name ...";
+        $time = microtime(true);
+        $this->authManager->addChild($parent, $child);
+        echo ' done (time: ' . sprintf('%.3f', microtime(true) - $time) . "s)\n";
     }
 
     /**
-     * This method contains the logic to be executed when applying this migration.
+     * Assigns a role to a user.
      *
-     * @return bool return a false value to indicate the migration fails
-     * and should not proceed further. All other return values mean the migration succeeds
+     * @param string|Role $role
+     * @param string|int $userId
      */
-    public function safeUp()
+    protected function assign($role, $userId)
     {
-    }
-
-    /**
-     * This method contains the logic to be executed when removing this migration.
-     *
-     * @return bool return a false value to indicate the migration fails
-     * and should not proceed further. All other return values mean the migration succeeds
-     */
-    public function safeDown()
-    {
+        if (is_string($role)) {
+            $role = $this->findRole($role);
+        }
+        echo "    > assigning $role->name to user $userId ...";
+        $time = microtime(true);
+        $this->authManager->assign($role, $userId);
+        echo ' done (time: ' . sprintf('%.3f', microtime(true) - $time) . "s)\n";
     }
 
     /**
@@ -205,23 +243,6 @@ class Migration extends Component implements MigrationInterface
     }
 
     /**
-     * Finds the role or throws an exception if it is not found.
-     *
-     * @param  string $name
-     *
-     * @return Role|null
-     */
-    protected function findRole($name)
-    {
-        $role = $this->authManager->getRole($name);
-        if ($role instanceof Role) {
-            return $role;
-        }
-
-        return null;
-    }
-
-    /**
      * Finds the permission or throws an exception if it is not found.
      *
      * @param  string $name
@@ -239,23 +260,20 @@ class Migration extends Component implements MigrationInterface
     }
 
     /**
-     * Adds child.
+     * Finds the role or throws an exception if it is not found.
      *
-     * @param Item|string $parent Either name or Item instance which is parent
-     * @param Item|string $child Either name or Item instance which is child
+     * @param  string $name
+     *
+     * @return Role|null
      */
-    protected function addChild($parent, $child)
+    protected function findRole($name)
     {
-        if (is_string($parent)) {
-            $parent = $this->findItem($parent);
+        $role = $this->authManager->getRole($name);
+        if ($role instanceof Role) {
+            return $role;
         }
-        if (is_string($child)) {
-            $child = $this->findItem($child);
-        }
-        echo "    > adding $child->name as child to $parent->name ...";
-        $time = microtime(true);
-        $this->authManager->addChild($parent, $child);
-        echo ' done (time: ' . sprintf('%.3f', microtime(true) - $time) . "s)\n";
+
+        return null;
     }
 
     /**
@@ -279,46 +297,20 @@ class Migration extends Component implements MigrationInterface
     }
 
     /**
-     * Assigns a role to a user.
+     * Remove permission.
      *
-     * @param string|Role $role
-     * @param string|int $userId
+     * @param  string $name
      */
-    protected function assign($role, $userId)
+    protected function removePermission($name)
     {
-        if (is_string($role)) {
-            $role = $this->findRole($role);
+        $permission = $this->authManager->getPermission($name);
+        if (empty($permission)) {
+            throw new InvalidParamException("Permission '{$permission}' does not exists");
         }
-        echo "    > assigning $role->name to user $userId ...";
+        echo "    > removing permission $permission->name ...";
         $time = microtime(true);
-        $this->authManager->assign($role, $userId);
+        $this->authManager->remove($permission);
         echo ' done (time: ' . sprintf('%.3f', microtime(true) - $time) . "s)\n";
-    }
-
-    /**
-     * Updates role.
-     *
-     * @param  string|Role $role
-     * @param  string $description
-     * @param  string $ruleName
-     * @param  mixed $data
-     *
-     * @return Role
-     */
-    protected function updateRole($role, $description = '', $ruleName = null, $data = null)
-    {
-        if (is_string($role)) {
-            $role = $this->findRole($role);
-        }
-        echo "    > update role $role->name ...";
-        $time = microtime(true);
-        $role->description = $description;
-        $role->ruleName = $ruleName;
-        $role->data = $data;
-        $this->authManager->update($role->name, $role);
-        echo ' done (time: ' . sprintf('%.3f', microtime(true) - $time) . "s)\n";
-
-        return $role;
     }
 
     /**
@@ -330,11 +322,28 @@ class Migration extends Component implements MigrationInterface
     {
         $role = $this->authManager->getRole($name);
         if (empty($role)) {
-            throw new InvalidParamException("Role '{$role}' does not exists");
+            throw new InvalidArgumentException("Role '{$name}' does not exists");
         }
         echo "    > removing role $role->name ...";
         $time = microtime(true);
         $this->authManager->remove($role);
+        echo ' done (time: ' . sprintf('%.3f', microtime(true) - $time) . "s)\n";
+    }
+
+    /**
+     * Remove rule.
+     *
+     * @param  string $ruleName
+     */
+    protected function removeRule($ruleName)
+    {
+        $rule = $this->authManager->getRule($ruleName);
+        if (empty($rule)) {
+            throw new InvalidParamException("Rule '{$ruleName}' does not exists");
+        }
+        echo "    > removing rule $rule->name ...";
+        $time = microtime(true);
+        $this->authManager->remove($rule);
         echo ' done (time: ' . sprintf('%.3f', microtime(true) - $time) . "s)\n";
     }
 
@@ -365,20 +374,29 @@ class Migration extends Component implements MigrationInterface
     }
 
     /**
-     * Remove permission.
+     * Updates role.
      *
-     * @param  string $name
+     * @param  string|Role $role
+     * @param  string $description
+     * @param  string $ruleName
+     * @param  mixed $data
+     *
+     * @return Role
      */
-    protected function removePermission($name)
+    protected function updateRole($role, $description = '', $ruleName = null, $data = null)
     {
-        $permission = $this->authManager->getPermission($name);
-        if (empty($permission)) {
-            throw new InvalidParamException("Permission '{$permission}' does not exists");
+        if (is_string($role)) {
+            $role = $this->findRole($role);
         }
-        echo "    > removing permission $permission->name ...";
+        echo "    > update role $role->name ...";
         $time = microtime(true);
-        $this->authManager->remove($permission);
+        $role->description = $description;
+        $role->ruleName = $ruleName;
+        $role->data = $data;
+        $this->authManager->update($role->name, $role);
         echo ' done (time: ' . sprintf('%.3f', microtime(true) - $time) . "s)\n";
+
+        return $role;
     }
 
     /**
@@ -402,22 +420,5 @@ class Migration extends Component implements MigrationInterface
         echo ' done (time: ' . sprintf('%.3f', microtime(true) - $time) . "s)\n";
 
         return $rule;
-    }
-
-    /**
-     * Remove rule.
-     *
-     * @param  string $ruleName
-     */
-    protected function removeRule($ruleName)
-    {
-        $rule = $this->authManager->getRule($ruleName);
-        if (empty($rule)) {
-            throw new InvalidParamException("Rule '{$ruleName}' does not exists");
-        }
-        echo "    > removing rule $rule->name ...";
-        $time = microtime(true);
-        $this->authManager->remove($rule);
-        echo ' done (time: ' . sprintf('%.3f', microtime(true) - $time) . "s)\n";
     }
 }

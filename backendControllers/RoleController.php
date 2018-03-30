@@ -1,22 +1,17 @@
 <?php
 
-namespace yii2mod\rbac\controllers;
+namespace totaldev\yii\rbac\backendControllers;
 
+use totaldev\yii\rbac\base\ItemController;
 use yii\rbac\Item;
-use yii2mod\rbac\base\ItemController;
 
 /**
  * Class RoleController
  *
- * @package yii2mod\rbac\controllers
+ * @package totaldev\yii\rbac\controllers
  */
 class RoleController extends ItemController
 {
-    /**
-     * @var int
-     */
-    protected $type = Item::TYPE_ROLE;
-
     /**
      * @var array
      */
@@ -24,4 +19,8 @@ class RoleController extends ItemController
         'Item' => 'Role',
         'Items' => 'Roles',
     ];
+    /**
+     * @var int
+     */
+    protected $type = Item::TYPE_ROLE;
 }

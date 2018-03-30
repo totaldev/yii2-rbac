@@ -1,6 +1,6 @@
 <?php
 
-namespace yii2mod\rbac\tests;
+namespace totaldev\yii\rbac\tests;
 
 use Yii;
 use yii\helpers\ArrayHelper;
@@ -11,23 +11,19 @@ use yii\helpers\ArrayHelper;
 class TestCase extends \PHPUnit\Framework\TestCase
 {
     /**
-     * @inheritdoc
+     * Destroys application in Yii::$app by setting it to null.
      */
-    protected function setUp()
+    protected function destroyApplication()
     {
-        parent::setUp();
-
-        $this->mockApplication();
-
-        $this->setupTestDbData();
+        Yii::$app = null;
     }
 
     /**
-     * @inheritdoc
+     * @return string vendor path
      */
-    protected function tearDown()
+    protected function getVendorPath()
     {
-        $this->destroyApplication();
+        return dirname(__DIR__) . '/vendor';
     }
 
     /**
@@ -45,7 +41,7 @@ class TestCase extends \PHPUnit\Framework\TestCase
             'vendorPath' => $this->getVendorPath(),
             'modules' => [
                 'rbac' => [
-                    'class' => 'yii2mod\rbac\Module',
+                    'class' => 'totaldev\yii\rbac\Module',
                 ],
             ],
             'components' => [
@@ -58,7 +54,7 @@ class TestCase extends \PHPUnit\Framework\TestCase
                     'defaultRoles' => ['guest', 'user'],
                 ],
                 'user' => [
-                    'identityClass' => 'yii2mod\rbac\tests\data\User',
+                    'identityClass' => 'totaldev\yii\rbac\tests\data\User',
                 ],
                 'request' => [
                     'hostInfo' => 'http://domain.com',
@@ -68,7 +64,7 @@ class TestCase extends \PHPUnit\Framework\TestCase
                     'translations' => [
                         'yii2mod.rbac' => [
                             'class' => 'yii\i18n\PhpMessageSource',
-                            'basePath' => '@yii2mod/rbac/messages',
+                            'basePath' => '@totaldev/yii/rbac/messages',
                         ],
                     ],
                 ],
@@ -77,19 +73,15 @@ class TestCase extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return string vendor path
+     * @inheritdoc
      */
-    protected function getVendorPath()
+    protected function setUp()
     {
-        return dirname(__DIR__) . '/vendor';
-    }
+        parent::setUp();
 
-    /**
-     * Destroys application in Yii::$app by setting it to null.
-     */
-    protected function destroyApplication()
-    {
-        Yii::$app = null;
+        $this->mockApplication();
+
+        $this->setupTestDbData();
     }
 
     /**
@@ -152,5 +144,13 @@ class TestCase extends \PHPUnit\Framework\TestCase
             'password_hash' => Yii::$app->getSecurity()->generatePasswordHash('password'),
             'email' => 'demo@example.com',
         ])->execute();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function tearDown()
+    {
+        $this->destroyApplication();
     }
 }

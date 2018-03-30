@@ -1,6 +1,6 @@
 <?php
 
-namespace yii2mod\rbac\commands;
+namespace totaldev\yii\rbac\console;
 
 use yii\console\controllers\BaseMigrateController;
 use yii\db\Connection;
@@ -30,21 +30,26 @@ class MigrateController extends BaseMigrateController
      * @var Connection The database connection
      */
     public $db = 'db';
-
-    /**
-     * @inheritdoc
-     */
-    public $migrationTable = '{{%auth_migration}}';
-
     /**
      * @inheritdoc
      */
     public $migrationPath = '@app/rbac/migrations';
-
     /**
      * @inheritdoc
      */
-    public $templateFile = '@vendor/yii2mod/yii2-rbac/views/migration.php';
+    public $migrationTable = '{{%auth_migration}}';
+    /**
+     * @inheritdoc
+     */
+    public $templateFile = '@vendor/totaldev/yii2-rbac/views/migration.php';
+
+    /**
+     * @return Connection
+     */
+    public function getDb(): Connection
+    {
+        return $this->db;
+    }
 
     /**
      * @inheritdoc
@@ -57,11 +62,36 @@ class MigrateController extends BaseMigrateController
     }
 
     /**
-     * @return Connection
+     * @inheritdoc
      */
-    public function getDb(): Connection
+    protected function addMigrationHistory($version)
     {
-        return $this->db;
+        $this->db->createCommand()->insert($this->migrationTable, [
+            'version' => $version,
+            'apply_time' => time(),
+        ])->execute();
+    }
+
+    /**
+     * Creates the migration history table.
+     */
+    protected function createMigrationHistoryTable()
+    {
+        $tableName = $this->db->schema->getRawTableName($this->migrationTable);
+
+        $this->stdout("Creating migration history table \"$tableName\"...", Console::FG_YELLOW);
+
+        $this->db->createCommand()->createTable($this->migrationTable, [
+            'version' => 'VARCHAR(180) NOT NULL PRIMARY KEY',
+            'apply_time' => 'INTEGER',
+        ])->execute();
+
+        $this->db->createCommand()->insert($this->migrationTable, [
+            'version' => self::BASE_MIGRATION,
+            'apply_time' => time(),
+        ])->execute();
+
+        $this->stdout("Done.\n", Console::FG_GREEN);
     }
 
     /**
@@ -89,43 +119,10 @@ class MigrateController extends BaseMigrateController
     /**
      * @inheritdoc
      */
-    protected function addMigrationHistory($version)
-    {
-        $this->db->createCommand()->insert($this->migrationTable, [
-            'version' => $version,
-            'apply_time' => time(),
-        ])->execute();
-    }
-
-    /**
-     * @inheritdoc
-     */
     protected function removeMigrationHistory($version)
     {
         $this->db->createCommand()->delete($this->migrationTable, [
             'version' => $version,
         ])->execute();
-    }
-
-    /**
-     * Creates the migration history table.
-     */
-    protected function createMigrationHistoryTable()
-    {
-        $tableName = $this->db->schema->getRawTableName($this->migrationTable);
-
-        $this->stdout("Creating migration history table \"$tableName\"...", Console::FG_YELLOW);
-
-        $this->db->createCommand()->createTable($this->migrationTable, [
-            'version' => 'VARCHAR(180) NOT NULL PRIMARY KEY',
-            'apply_time' => 'INTEGER',
-        ])->execute();
-
-        $this->db->createCommand()->insert($this->migrationTable, [
-            'version' => self::BASE_MIGRATION,
-            'apply_time' => time(),
-        ])->execute();
-
-        $this->stdout("Done.\n", Console::FG_GREEN);
     }
 }

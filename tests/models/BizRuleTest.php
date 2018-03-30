@@ -1,17 +1,17 @@
 <?php
 
-namespace yii2mod\rbac\tests\models;
+namespace totaldev\yii\rbac\tests\models;
 
+use totaldev\yii\rbac\models\BizRuleModel;
+use totaldev\yii\rbac\rules\GuestRule;
+use totaldev\yii\rbac\tests\TestCase;
 use Yii;
 use yii\rbac\Rule;
-use yii2mod\rbac\models\BizRuleModel;
-use yii2mod\rbac\rules\GuestRule;
-use yii2mod\rbac\tests\TestCase;
 
 /**
  * Class BizRuleTest
  *
- * @package yii2mod\rbac\tests\models
+ * @package totaldev\yii\rbac\tests\models
  */
 class BizRuleTest extends TestCase
 {

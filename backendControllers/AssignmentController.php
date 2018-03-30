@@ -1,65 +1,114 @@
 <?php
 
-namespace yii2mod\rbac\controllers;
+namespace totaldev\yii\rbac\backendControllers;
 
+use totaldev\yii\rbac\models\AssignmentModel;
+use totaldev\yii\rbac\models\search\AssignmentSearch;
 use Yii;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
-use yii2mod\rbac\models\AssignmentModel;
-use yii2mod\rbac\models\search\AssignmentSearch;
 
 /**
  * Class AssignmentController
  *
- * @package yii2mod\rbac\controllers
+ * @package totaldev\yii\rbac\controllers
  */
 class AssignmentController extends Controller
 {
     /**
-     * @var \yii\web\IdentityInterface the class name of the [[identity]] object
+     * @var array assignments GridView columns
      */
-    public $userIdentityClass;
-
+    public $gridViewColumns = [];
+    /**
+     * @var string id column name
+     */
+    public $idField = 'id';
     /**
      * @var string search class name for assignments search
      */
     public $searchClass = [
         'class' => AssignmentSearch::class,
     ];
-
     /**
-     * @var string id column name
+     * @var \yii\web\IdentityInterface the class name of the [[identity]] object
      */
-    public $idField = 'id';
-
+    public $userIdentityClass;
     /**
      * @var string username column name
      */
     public $usernameField = 'username';
 
     /**
-     * @var array assignments GridView columns
+     * Assign items
+     *
+     * @param int $id
+     *
+     * @return array
      */
-    public $gridViewColumns = [];
+    public function actionAssign(int $id)
+    {
+        $items = Yii::$app->getRequest()->post('items', []);
+        $assignmentModel = $this->findModel($id);
+        $assignmentModel->assign($items);
+
+        return $assignmentModel->getItems();
+    }
 
     /**
-     * @inheritdoc
+     * List of all assignments
+     *
+     * @return string
      */
-    public function init()
+    public function actionIndex()
     {
-        parent::init();
+        /* @var AssignmentSearch */
+        $searchModel = Yii::createObject($this->searchClass);
 
-        if ($this->userIdentityClass === null) {
-            $this->userIdentityClass = Yii::$app->user->identityClass;
+        if ($searchModel instanceof AssignmentSearch) {
+            $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $this->userIdentityClass, $this->idField, $this->usernameField);
+        } else {
+            $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         }
 
-        if (empty($this->gridViewColumns)) {
-            $this->gridViewColumns = [
-                $this->idField,
-                $this->usernameField,
-            ];
-        }
+        return $this->render('index', [
+            'dataProvider' => $dataProvider,
+            'searchModel' => $searchModel,
+            'gridViewColumns' => $this->gridViewColumns,
+        ]);
+    }
+
+    /**
+     * Remove items
+     *
+     * @param int $id
+     *
+     * @return array
+     */
+    public function actionRemove(int $id)
+    {
+        $items = Yii::$app->getRequest()->post('items', []);
+        $assignmentModel = $this->findModel($id);
+        $assignmentModel->revoke($items);
+
+        return $assignmentModel->getItems();
+    }
+
+    /**
+     * Displays a single Assignment model.
+     *
+     * @param int $id
+     *
+     * @return mixed
+     */
+    public function actionView(int $id)
+    {
+        $model = $this->findModel($id);
+
+        return $this->render('view', [
+            'model' => $model,
+            'usernameField' => $this->usernameField,
+        ]);
     }
 
     /**
@@ -88,75 +137,22 @@ class AssignmentController extends Controller
     }
 
     /**
-     * List of all assignments
-     *
-     * @return string
+     * @inheritdoc
      */
-    public function actionIndex()
+    public function init()
     {
-        /* @var AssignmentSearch */
-        $searchModel = Yii::createObject($this->searchClass);
+        parent::init();
 
-        if ($searchModel instanceof AssignmentSearch) {
-            $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $this->userIdentityClass, $this->idField, $this->usernameField);
-        } else {
-            $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        if ($this->userIdentityClass === null) {
+            $this->userIdentityClass = Yii::$app->user->identityClass;
         }
 
-        return $this->render('index', [
-            'dataProvider' => $dataProvider,
-            'searchModel' => $searchModel,
-            'gridViewColumns' => $this->gridViewColumns,
-        ]);
-    }
-
-    /**
-     * Displays a single Assignment model.
-     *
-     * @param int $id
-     *
-     * @return mixed
-     */
-    public function actionView(int $id)
-    {
-        $model = $this->findModel($id);
-
-        return $this->render('view', [
-            'model' => $model,
-            'usernameField' => $this->usernameField,
-        ]);
-    }
-
-    /**
-     * Assign items
-     *
-     * @param int $id
-     *
-     * @return array
-     */
-    public function actionAssign(int $id)
-    {
-        $items = Yii::$app->getRequest()->post('items', []);
-        $assignmentModel = $this->findModel($id);
-        $assignmentModel->assign($items);
-
-        return $assignmentModel->getItems();
-    }
-
-    /**
-     * Remove items
-     *
-     * @param int $id
-     *
-     * @return array
-     */
-    public function actionRemove(int $id)
-    {
-        $items = Yii::$app->getRequest()->post('items', []);
-        $assignmentModel = $this->findModel($id);
-        $assignmentModel->revoke($items);
-
-        return $assignmentModel->getItems();
+        if (empty($this->gridViewColumns)) {
+            $this->gridViewColumns = [
+                $this->idField,
+                $this->usernameField,
+            ];
+        }
     }
 
     /**

@@ -1,6 +1,6 @@
 <?php
 
-namespace yii2mod\rbac\models\search;
+namespace totaldev\yii\rbac\models\search;
 
 use dosamigos\arrayquery\ArrayQuery;
 use Yii;
@@ -11,46 +11,30 @@ use yii\rbac\Item;
 /**
  * Class AuthItemSearch
  *
- * @package yii2mod\rbac\models\search
+ * @package totaldev\yii\rbac\models\search
  */
 class AuthItemSearch extends Model
 {
     /**
-     * @var string auth item name
-     */
-    public $name;
-
-    /**
-     * @var int auth item type
-     */
-    public $type;
-
-    /**
      * @var string auth item description
      */
     public $description;
-
     /**
-     * @var string auth item rule name
+     * @var string auth item name
      */
-    public $ruleName;
-
+    public $name;
     /**
      * @var int the default page size
      */
     public $pageSize = 25;
-
     /**
-     * @inheritdoc
+     * @var string auth item rule name
      */
-    public function rules(): array
-    {
-        return [
-            [['name', 'ruleName', 'description'], 'trim'],
-            [['type'], 'integer'],
-            [['name', 'ruleName', 'description'], 'safe'],
-        ];
-    }
+    public $ruleName;
+    /**
+     * @var int auth item type
+     */
+    public $type;
 
     /**
      * @inheritdoc
@@ -63,6 +47,18 @@ class AuthItemSearch extends Model
             'description' => Yii::t('yii2mod.rbac', 'Description'),
             'rule' => Yii::t('yii2mod.rbac', 'Rule'),
             'data' => Yii::t('yii2mod.rbac', 'Data'),
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rules(): array
+    {
+        return [
+            [['name', 'ruleName', 'description'], 'trim'],
+            [['type'], 'integer'],
+            [['name', 'ruleName', 'description'], 'safe'],
         ];
     }
 

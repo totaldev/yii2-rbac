@@ -1,6 +1,6 @@
 <?php
 
-namespace yii2mod\rbac\rules;
+namespace totaldev\yii\rbac\rules;
 
 use Yii;
 use yii\rbac\Rule;
@@ -8,7 +8,7 @@ use yii\rbac\Rule;
 /**
  * Class UserRule
  *
- * @package yii2mod\rbac\rules
+ * @package totaldev\yii\rbac\rules
  */
 class UserRule extends Rule
 {

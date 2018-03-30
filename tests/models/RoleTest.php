@@ -1,17 +1,17 @@
 <?php
 
-namespace yii2mod\rbac\tests\models;
+namespace totaldev\yii\rbac\tests\models;
 
+use totaldev\yii\rbac\models\AuthItemModel;
+use totaldev\yii\rbac\tests\TestCase;
 use Yii;
 use yii\rbac\Item;
 use yii\rbac\Role;
-use yii2mod\rbac\models\AuthItemModel;
-use yii2mod\rbac\tests\TestCase;
 
 /**
  * Class RoleTest
  *
- * @package yii2mod\rbac\tests\models
+ * @package totaldev\yii\rbac\tests\models
  */
 class RoleTest extends TestCase
 {

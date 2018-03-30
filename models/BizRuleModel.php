@@ -1,6 +1,6 @@
 <?php
 
-namespace yii2mod\rbac\models;
+namespace totaldev\yii\rbac\models;
 
 use Yii;
 use yii\base\Model;
@@ -9,30 +9,26 @@ use yii\rbac\Rule;
 /**
  * Class BizRuleModel
  *
- * @package yii2mod\rbac\models
+ * @package totaldev\yii\rbac\models
  */
 class BizRuleModel extends Model
 {
     /**
-     * @var string name of the rule
+     * @var string Rule className
      */
-    public $name;
-
+    public $className;
     /**
      * @var int UNIX timestamp representing the rule creation time
      */
     public $createdAt;
-
+    /**
+     * @var string name of the rule
+     */
+    public $name;
     /**
      * @var int UNIX timestamp representing the rule updating time
      */
     public $updatedAt;
-
-    /**
-     * @var string Rule className
-     */
-    public $className;
-
     /**
      * @var \yii\rbac\ManagerInterface
      */
@@ -63,16 +59,31 @@ class BizRuleModel extends Model
     }
 
     /**
+     * Create object
+     *
+     * @param $id
+     *
+     * @return BizRuleModel|null
+     */
+    public static function find(int $id)
+    {
+        $item = Yii::$app->authManager->getRule($id);
+
+        if ($item !== null) {
+            return new static($item);
+        }
+
+        return null;
+    }
+
+    /**
      * @inheritdoc
      */
-    public function rules(): array
+    public function attributeLabels(): array
     {
         return [
-            [['name', 'className'], 'trim'],
-            [['name', 'className'], 'required'],
-            ['className', 'string'],
-            ['name', 'string', 'max' => 64],
-            ['className', 'classExists'],
+            'name' => Yii::t('yii2mod.rbac', 'Name'),
+            'className' => Yii::t('yii2mod.rbac', 'Class Name'),
         ];
     }
 
@@ -90,20 +101,9 @@ class BizRuleModel extends Model
 
         if (!is_subclass_of($this->className, Rule::class)) {
             $message = Yii::t('yii2mod.rbac', "'{class}' must extend from 'yii\\rbac\\Rule' or its child class", [
-                'class' => $this->className, ]);
+                'class' => $this->className,]);
             $this->addError('className', $message);
         }
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function attributeLabels(): array
-    {
-        return [
-            'name' => Yii::t('yii2mod.rbac', 'Name'),
-            'className' => Yii::t('yii2mod.rbac', 'Class Name'),
-        ];
     }
 
     /**
@@ -117,21 +117,25 @@ class BizRuleModel extends Model
     }
 
     /**
-     * Create object
-     *
-     * @param $id
-     *
-     * @return BizRuleModel|null
+     * @return null|Rule
      */
-    public static function find(int $id)
+    public function getItem()
     {
-        $item = Yii::$app->authManager->getRule($id);
+        return $this->_item;
+    }
 
-        if ($item !== null) {
-            return new static($item);
-        }
-
-        return null;
+    /**
+     * @inheritdoc
+     */
+    public function rules(): array
+    {
+        return [
+            [['name', 'className'], 'trim'],
+            [['name', 'className'], 'required'],
+            ['className', 'string'],
+            ['name', 'string', 'max' => 64],
+            ['className', 'classExists'],
+        ];
     }
 
     /**
@@ -164,13 +168,5 @@ class BizRuleModel extends Model
         }
 
         return false;
-    }
-
-    /**
-     * @return null|Rule
-     */
-    public function getItem()
-    {
-        return $this->_item;
     }
 }

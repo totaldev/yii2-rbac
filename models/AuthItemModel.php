@@ -1,6 +1,6 @@
 <?php
 
-namespace yii2mod\rbac\models;
+namespace totaldev\yii\rbac\models;
 
 use Yii;
 use yii\base\Model;
@@ -21,30 +21,25 @@ use yii\rbac\Rule;
 class AuthItemModel extends Model
 {
     /**
-     * @var string auth item name
+     * @var null|string additional data
      */
-    public $name;
-
-    /**
-     * @var int auth item type
-     */
-    public $type;
-
+    public $data;
     /**
      * @var string auth item description
      */
     public $description;
-
+    /**
+     * @var string auth item name
+     */
+    public $name;
     /**
      * @var string biz rule name
      */
     public $ruleName;
-
     /**
-     * @var null|string additional data
+     * @var int auth item type
      */
-    public $data;
-
+    public $type;
     /**
      * @var \yii\rbac\ManagerInterface
      */
@@ -78,59 +73,64 @@ class AuthItemModel extends Model
     }
 
     /**
-     * @inheritdoc
+     * Find role
+     *
+     * @param string $id
+     *
+     * @return null|\self
      */
-    public function rules(): array
+    public static function find(string $id)
     {
-        return [
-            [['name', 'description', 'data', 'ruleName'], 'trim'],
-            [['name', 'type'], 'required'],
-            ['ruleName', 'checkRule'],
-            ['name', 'validateName', 'when' => function () {
-                return $this->getIsNewRecord() || ($this->_item->name != $this->name);
-            }],
-            ['type', 'integer'],
-            [['description', 'data', 'ruleName'], 'default'],
-            ['name', 'string', 'max' => 64],
-        ];
-    }
+        $item = Yii::$app->authManager->getRole($id);
 
-    /**
-     * Validate item name
-     */
-    public function validateName()
-    {
-        $value = $this->name;
-        if ($this->manager->getRole($value) !== null || $this->manager->getPermission($value) !== null) {
-            $message = Yii::t('yii', '{attribute} "{value}" has already been taken.');
-            $params = [
-                'attribute' => $this->getAttributeLabel('name'),
-                'value' => $value,
-            ];
-            $this->addError('name', Yii::$app->getI18n()->format($message, $params, Yii::$app->language));
+        if ($item !== null) {
+            return new self($item);
         }
+
+        return null;
     }
 
     /**
-     * Check for rule
+     * Get type name
+     *
+     * @param mixed $type
+     *
+     * @return string|array
      */
-    public function checkRule()
+    public static function getTypeName($type = null)
     {
-        $name = $this->ruleName;
+        $result = [
+            Item::TYPE_PERMISSION => 'Permission',
+            Item::TYPE_ROLE => 'Role',
+        ];
 
-        if (!$this->manager->getRule($name)) {
-            try {
-                $rule = Yii::createObject($name);
-                if ($rule instanceof Rule) {
-                    $rule->name = $name;
-                    $this->manager->add($rule);
-                } else {
-                    $this->addError('ruleName', Yii::t('yii2mod.rbac', 'Invalid rule "{value}"', ['value' => $name]));
+        if ($type === null) {
+            return $result;
+        }
+
+        return $result[$type];
+    }
+
+    /**
+     * Add child to Item
+     *
+     * @param array $items
+     *
+     * @return bool
+     */
+    public function addChildren(array $items): bool
+    {
+        if ($this->_item) {
+            foreach ($items as $name) {
+                $child = $this->manager->getPermission($name);
+                if (empty($child) && $this->type == Item::TYPE_ROLE) {
+                    $child = $this->manager->getRole($name);
                 }
-            } catch (\Exception $exc) {
-                $this->addError('ruleName', Yii::t('yii2mod.rbac', 'Rule "{value}" does not exists', ['value' => $name]));
+                $this->manager->addChild($this->_item, $child);
             }
         }
+
+        return true;
     }
 
     /**
@@ -148,6 +148,34 @@ class AuthItemModel extends Model
     }
 
     /**
+     * Check for rule
+     */
+    public function checkRule()
+    {
+        $name = $this->ruleName;
+
+        if (!$this->manager->getRule($name)) {
+            try {
+                $rule = Yii::createObject($name);
+                if ($rule instanceof Rule) {
+                    $rule->name = $name;
+                    $this->manager->add($rule);
+                } else {
+                    $this->addError(
+                        'ruleName',
+                        Yii::t('yii2mod.rbac', 'Invalid rule "{value}"', ['value' => $name])
+                    );
+                }
+            } catch (\Exception $exc) {
+                $this->addError(
+                    'ruleName',
+                    Yii::t('yii2mod.rbac', 'Rule "{value}" does not exists', ['value' => $name])
+                );
+            }
+        }
+    }
+
+    /**
      * Check if is new record.
      *
      * @return bool
@@ -158,21 +186,83 @@ class AuthItemModel extends Model
     }
 
     /**
-     * Find role
-     *
-     * @param string $id
-     *
-     * @return null|\self
+     * @return null|Item
      */
-    public static function find(string $id)
+    public function getItem()
     {
-        $item = Yii::$app->authManager->getRole($id);
+        return $this->_item;
+    }
 
-        if ($item !== null) {
-            return new self($item);
+    /**
+     * Get all available and assigned roles, permission and routes
+     *
+     * @return array
+     */
+    public function getItems(): array
+    {
+        $available = [];
+        $assigned = [];
+
+        if ($this->type == Item::TYPE_ROLE) {
+            foreach (array_keys($this->manager->getRoles()) as $name) {
+                $available[$name] = 'role';
+            }
+        }
+        foreach (array_keys($this->manager->getPermissions()) as $name) {
+            $available[$name] = $name[0] == '/' ? 'route' : 'permission';
         }
 
-        return null;
+        foreach ($this->manager->getChildren($this->_item->name) as $item) {
+            $assigned[$item->name] = $item->type == 1 ? 'role' : ($item->name[0] == '/' ? 'route' : 'permission');
+            unset($available[$item->name]);
+        }
+
+        unset($available[$this->name]);
+
+        return [
+            'available' => $available,
+            'assigned' => $assigned,
+        ];
+    }
+
+    /**
+     * Remove child from an item
+     *
+     * @param array $items
+     *
+     * @return bool
+     */
+    public function removeChildren(array $items): bool
+    {
+        if ($this->_item !== null) {
+            foreach ($items as $name) {
+                $child = $this->manager->getPermission($name);
+                if (empty($child) && $this->type == Item::TYPE_ROLE) {
+                    $child = $this->manager->getRole($name);
+                }
+                $this->manager->removeChild($this->_item, $child);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function rules(): array
+    {
+        return [
+            [['name', 'description', 'data', 'ruleName'], 'trim'],
+            [['name', 'type'], 'required'],
+            ['ruleName', 'checkRule'],
+            ['name', 'validateName', 'when' => function () {
+                return $this->getIsNewRecord() || ($this->_item->name != $this->name);
+            }],
+            ['type', 'integer'],
+            [['description', 'data', 'ruleName'], 'default'],
+            ['name', 'string', 'max' => 64],
+        ];
     }
 
     /**
@@ -214,107 +304,18 @@ class AuthItemModel extends Model
     }
 
     /**
-     * Add child to Item
-     *
-     * @param array $items
-     *
-     * @return bool
+     * Validate item name
      */
-    public function addChildren(array $items): bool
+    public function validateName()
     {
-        if ($this->_item) {
-            foreach ($items as $name) {
-                $child = $this->manager->getPermission($name);
-                if (empty($child) && $this->type == Item::TYPE_ROLE) {
-                    $child = $this->manager->getRole($name);
-                }
-                $this->manager->addChild($this->_item, $child);
-            }
+        $value = $this->name;
+        if ($this->manager->getRole($value) !== null || $this->manager->getPermission($value) !== null) {
+            $message = Yii::t('yii', '{attribute} "{value}" has already been taken.');
+            $params = [
+                'attribute' => $this->getAttributeLabel('name'),
+                'value' => $value,
+            ];
+            $this->addError('name', Yii::$app->getI18n()->format($message, $params, Yii::$app->language));
         }
-
-        return true;
-    }
-
-    /**
-     * Remove child from an item
-     *
-     * @param array $items
-     *
-     * @return bool
-     */
-    public function removeChildren(array $items): bool
-    {
-        if ($this->_item !== null) {
-            foreach ($items as $name) {
-                $child = $this->manager->getPermission($name);
-                if (empty($child) && $this->type == Item::TYPE_ROLE) {
-                    $child = $this->manager->getRole($name);
-                }
-                $this->manager->removeChild($this->_item, $child);
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Get all available and assigned roles, permission and routes
-     *
-     * @return array
-     */
-    public function getItems(): array
-    {
-        $available = [];
-        $assigned = [];
-
-        if ($this->type == Item::TYPE_ROLE) {
-            foreach (array_keys($this->manager->getRoles()) as $name) {
-                $available[$name] = 'role';
-            }
-        }
-        foreach (array_keys($this->manager->getPermissions()) as $name) {
-            $available[$name] = $name[0] == '/' ? 'route' : 'permission';
-        }
-
-        foreach ($this->manager->getChildren($this->_item->name) as $item) {
-            $assigned[$item->name] = $item->type == 1 ? 'role' : ($item->name[0] == '/' ? 'route' : 'permission');
-            unset($available[$item->name]);
-        }
-
-        unset($available[$this->name]);
-
-        return [
-            'available' => $available,
-            'assigned' => $assigned,
-        ];
-    }
-
-    /**
-     * @return null|Item
-     */
-    public function getItem()
-    {
-        return $this->_item;
-    }
-
-    /**
-     * Get type name
-     *
-     * @param mixed $type
-     *
-     * @return string|array
-     */
-    public static function getTypeName($type = null)
-    {
-        $result = [
-            Item::TYPE_PERMISSION => 'Permission',
-            Item::TYPE_ROLE => 'Role',
-        ];
-
-        if ($type === null) {
-            return $result;
-        }
-
-        return $result[$type];
     }
 }

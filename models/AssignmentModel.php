@@ -1,6 +1,6 @@
 <?php
 
-namespace yii2mod\rbac\models;
+namespace totaldev\yii\rbac\models;
 
 use Yii;
 use yii\base\BaseObject;
@@ -10,7 +10,7 @@ use yii\web\IdentityInterface;
 /**
  * Class AssignmentModel
  *
- * @package yii2mod\rbac\models
+ * @package totaldev\yii\rbac\models
  */
 class AssignmentModel extends BaseObject
 {
@@ -69,24 +69,6 @@ class AssignmentModel extends BaseObject
     }
 
     /**
-     * Revokes a roles and permissions from the user.
-     *
-     * @param array $items
-     *
-     * @return bool
-     */
-    public function revoke(array $items): bool
-    {
-        foreach ($items as $name) {
-            $item = $this->manager->getRole($name);
-            $item = $item ?: $this->manager->getPermission($name);
-            $this->manager->revoke($item, $this->userId);
-        }
-
-        return true;
-    }
-
-    /**
      * Get all available and assigned roles and permissions
      *
      * @return array
@@ -115,5 +97,23 @@ class AssignmentModel extends BaseObject
             'available' => $available,
             'assigned' => $assigned,
         ];
+    }
+
+    /**
+     * Revokes a roles and permissions from the user.
+     *
+     * @param array $items
+     *
+     * @return bool
+     */
+    public function revoke(array $items): bool
+    {
+        foreach ($items as $name) {
+            $item = $this->manager->getRole($name);
+            $item = $item ?: $this->manager->getPermission($name);
+            $this->manager->revoke($item, $this->userId);
+        }
+
+        return true;
     }
 }

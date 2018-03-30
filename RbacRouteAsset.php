@@ -1,11 +1,11 @@
 <?php
 
-namespace yii2mod\rbac;
+namespace totaldev\yii\rbac;
 
 /**
  * Class RbacRouteAsset
  *
- * @package yii2mod\rbac
+ * @package totaldev\yii\rbac
  */
 class RbacRouteAsset extends RbacAsset
 {

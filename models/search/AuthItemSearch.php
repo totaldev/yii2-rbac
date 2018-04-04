@@ -36,6 +36,12 @@ class AuthItemSearch extends Model
      */
     public $type;
 
+    /** @inheritdoc */
+    public function formName()
+    {
+        return '';
+    }
+
     /**
      * @inheritdoc
      */

@@ -17,7 +17,6 @@ use yii\db\Connection;
 use yii\db\Expression;
 use yii\db\Query;
 use yii\di\Instance;
-use yii\helpers\ArrayHelper;
 use yii\rbac\Assignment;
 use yii\rbac\Item;
 use yii\rbac\Permission;
@@ -83,9 +82,15 @@ class DbManager extends \yii\rbac\BaseManager
      */
     public $ruleTable = 'RbacAuthRule';
     /**
+     * @var array
+     */
+    public $allowPermissions = [];
+    /**
      * @var Item[] all auth items (name => Item)
      */
     protected $items;
+    /** @var Item[] indexed by type links to items */
+    protected $itemsByType;
     /**
      * @var array auth item parent-child relationships (childName => list of parents)
      */
@@ -157,6 +162,10 @@ class DbManager extends \yii\rbac\BaseManager
      */
     public function checkAccess($userId, $permissionName, $params = [])
     {
+        if (in_array($permissionName, $this->allowPermissions)) {
+            return true;
+        }
+
         if (isset($this->_checkAccessAssignments[(string)$userId])) {
             $assignments = $this->_checkAccessAssignments[(string)$userId];
         } else {
@@ -353,22 +362,22 @@ class DbManager extends \yii\rbac\BaseManager
      */
     public function getRules()
     {
-        if ($this->rules !== null) {
+        if (!empty($this->rules)) {
             return $this->rules;
         }
 
         $query = (new Query())->from($this->ruleTable);
 
-        $rules = [];
+        $this->rules = [];
         foreach ($query->all($this->db) as $row) {
             $data = $row['data'];
             if (is_resource($data)) {
                 $data = stream_get_contents($data);
             }
-            $rules[$row['name']] = unserialize($data);
+            $this->rules[$row['name']] = unserialize($data);
         }
 
-        return $rules;
+        return $this->rules;
     }
 
     /**
@@ -832,18 +841,29 @@ class DbManager extends \yii\rbac\BaseManager
     /**
      * {@inheritdoc}
      */
-    protected function getItems($type)
+    protected function getItems($type = null)
     {
-        $query = (new Query())
-            ->from($this->itemTable)
-            ->where(['type' => $type]);
-
-        $items = [];
-        foreach ($query->all($this->db) as $row) {
-            $items[$row['name']] = $this->populateItem($row);
+        if (empty($type) && !empty($this->items)) {
+            return $this->items;
+        }
+        if ($type && !empty($this->itemsByType) && !empty($this->itemsByType[$type])) {
+            return $this->itemsByType[$type];
         }
 
-        return $items;
+        $query = (new Query())->from($this->itemTable);
+
+        $this->items = [];
+        $this->itemsByType = [];
+        foreach ($query->all($this->db) as $row) {
+            $item = $this->populateItem($row);
+            $this->items[$item->name] = $item;
+            $this->itemsByType[$item->type][$item->name] = $this->items[$item->name];
+        }
+
+        if ($type) {
+            return $this->itemsByType[$type];
+        }
+        return $this->items;
     }
 
     /**

@@ -25,6 +25,13 @@ class AssignmentSearch extends Model
      */
     public $username;
 
+    /** @inheritdoc */
+    public function formName()
+    {
+        return '';
+    }
+
+
     /**
      * @inheritdoc
      */

@@ -27,7 +27,7 @@ class AssignmentController extends Controller
     /**
      * @var string search class name for assignments search
      */
-    public $searchClass = [
+    public $searchModel = [
         'class' => AssignmentSearch::class,
     ];
     /**
@@ -63,7 +63,7 @@ class AssignmentController extends Controller
     public function actionIndex()
     {
         /* @var AssignmentSearch */
-        $searchModel = Yii::createObject($this->searchClass);
+        $searchModel = Yii::createObject($this->searchModel);
 
         if ($searchModel instanceof AssignmentSearch) {
             $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $this->userIdentityClass, $this->idField, $this->usernameField);

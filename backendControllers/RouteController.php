@@ -22,10 +22,35 @@ class RouteController extends Controller
         'class' => RouteModel::class,
     ];
 
+
+    public function actionAllowedLinks()
+    {
+        $model = Yii::createObject($this->modelClass);
+        $routes = $model->getAllRoutes();
+        $permissions = Yii::$app->getAuthManager()->getPermissions();
+        $links = [];
+        foreach ($routes as $permission => $route) {
+            if (Yii::$app->getUser()->can($permission)) {
+                $url = Yii::$app->getUrlManager()->createUrl($route);
+                $url = rtrim($url, '*');
+                $permissionName = isset($permissions[$permission]) ? $permissions[$permission]->description : '-';
+                $links[$url] = "$url: $permissionName";
+            }
+        }
+
+        $content = '<h1>Ваши доступы</h1>';
+        $content .= "<ul>";
+        foreach ($links as $url => $label) {
+            $content .= "<li><a href='{$url}'>{$label}</a></li>";
+        }
+        $content .= "</ul>";
+        return $content;
+    }
+
     /**
      * Assign routes
-     *
      * @return array
+     * @throws \yii\base\InvalidConfigException
      */
     public function actionAssign(): array
     {
@@ -38,8 +63,8 @@ class RouteController extends Controller
 
     /**
      * Lists all Route models.
-     *
-     * @return mixed
+     * @return string
+     * @throws \yii\base\InvalidConfigException
      */
     public function actionIndex()
     {
@@ -50,8 +75,8 @@ class RouteController extends Controller
 
     /**
      * Refresh cache of routes
-     *
      * @return array
+     * @throws \yii\base\InvalidConfigException
      */
     public function actionRefresh(): array
     {
@@ -65,6 +90,7 @@ class RouteController extends Controller
      * Remove routes
      *
      * @return array
+     * @throws \yii\base\InvalidConfigException
      */
     public function actionRemove(): array
     {

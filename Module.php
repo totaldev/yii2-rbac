@@ -43,11 +43,9 @@ class Module extends \totaldev\yii\usefull\base\Module
     /** @var string the default route of this module. Defaults to 'default' */
     public $defaultRoute = 'assignment';
     /**
-     * dependency inversion
      * @see \totaldev\yii\rbac\models\RouteModel::$dispatchApplications
      */
     public $dispatchApplications = [];
-
 
     /**
      * @param \yii\base\Application $app
@@ -55,11 +53,6 @@ class Module extends \totaldev\yii\usefull\base\Module
      */
     public function bootstrap($app)
     {
-        if (empty($this->dispatchApplications)) {
-            throw new InvalidConfigException('You must set $dispatchApplications');
-        }
-        RouteModel::$dispatchApplications = $this->dispatchApplications;
-
         if ($app->i18n) {
             if (!empty($app->i18n->translations['yii2mod.rbac'])) {
                 throw new Exception('Translation with this category already exists');
@@ -83,6 +76,11 @@ class Module extends \totaldev\yii\usefull\base\Module
 
     public function init()
     {
+        if (empty($this->dispatchApplications)) {
+            throw new InvalidConfigException('You must set $dispatchApplications');
+        }
+        RouteModel::$dispatchApplications = $this->dispatchApplications;
+
         parent::init();
         $this->setViewPath('@vendor/totaldev/yii2-rbac/views');
     }
@@ -94,9 +92,14 @@ class Module extends \totaldev\yii\usefull\base\Module
     protected function consoleBootstrap(ConsoleApplication $app)
     {
         parent::consoleBootstrap($app);
+        $reflection = new \ReflectionClass($this);
+        $namespace = $reflection->getNamespaceName();
+        $app->controllerMap['migrate']['migrationNamespaces'][] = $namespace . '\migrations';
+
+        $this->controllerNamespace = $namespace . '\console';
         $this->controllerMap['migrate'] = [
             'class' => MigrateController::class,
-            'migrationTable' => '{{%auth_migration}}',
+            'migrationTable' => '{{%migration_auth}}',
             'migrationPath' => '@common/migrations/rbac',
         ];
     }

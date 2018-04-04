@@ -33,12 +33,17 @@ class AccessControl extends \yii\filters\AccessControl
         $params = ArrayHelper::getValue($this->params, $action->id, []);
         $applicationId = Yii::$app->id;
 
-        if (Yii::$app->user->can("@{$applicationId}/" . $action->getUniqueId(), $params)) {
+        // full access
+        if (Yii::$app->user->can("*", $params)) {
+            return true;
+        }
+
+        if (Yii::$app->user->can("#{$applicationId}/" . $action->getUniqueId(), $params)) {
             return true;
         }
 
         do {
-            if (Yii::$app->user->can("@{$applicationId}/" . ltrim($controller->getUniqueId() . '/*', '/'))) {
+            if (Yii::$app->user->can("#{$applicationId}/" . ltrim($controller->getUniqueId() . '/*', '/'))) {
                 return true;
             }
             $controller = $controller->module;
@@ -52,46 +57,11 @@ class AccessControl extends \yii\filters\AccessControl
      */
     protected function isActive($action): bool
     {
-        if ($this->isErrorPage($action) || $this->isLoginPage($action) || $this->isAllowedAction($action)) {
+        if ($this->isErrorPage($action) || $this->isLoginPage($action)) {
             return false;
         }
 
         return parent::isActive($action);
-    }
-
-    /**
-     * Returns a value indicating whether a current url exists in the `allowActions` list.
-     *
-     * @param Action $action
-     *
-     * @return bool
-     */
-    private function isAllowedAction(Action $action): bool
-    {
-        if ($this->owner instanceof Module) {
-            $ownerId = $this->owner->getUniqueId();
-            $id = $action->getUniqueId();
-            if (!empty($ownerId) && strpos($id, $ownerId . '/') === 0) {
-                $id = substr($id, strlen($ownerId) + 1);
-            }
-        } else {
-            $id = $action->id;
-        }
-
-        foreach ($this->allowActions as $route) {
-            if (substr($route, -1) === '*') {
-                $route = rtrim($route, '*');
-                if ($route === '' || strpos($id, $route) === 0) {
-                    return true;
-                }
-            } else {
-                if ($id === $route) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     /**

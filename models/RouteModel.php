@@ -30,7 +30,7 @@ class RouteModel extends BaseObject
      */
     public $cacheDuration = 3600;
     /**
-     * Application {id}=>{path} registry for access dispatch
+     * Application {id}=>{pathAlias} registry for access dispatch
      * You must set items cause in backend and console mode, application must know about all dispatch contexts
      * @var array
      */
@@ -131,12 +131,12 @@ class RouteModel extends BaseObject
                         'tags' => self::CACHE_TAG,
                     ]));
                 }
-                foreach ($result as $key => $value) {
-                    $result["@{$applicationId}$key"] = "@{$applicationId}$value";
-                    unset($result[$key]);
-                }
-                ksort($result);
             }
+            foreach ($result as $key => $value) {
+                $result["#{$applicationId}$key"] = "#{$applicationId}$value";
+                unset($result[$key]);
+            }
+            ksort($result);
             $all = array_merge($all, $result);
         }
 
@@ -196,14 +196,15 @@ class RouteModel extends BaseObject
      *
      * @param Controller $controller
      * @param array $result all controller action
+     * @return int
      */
     protected function getActionRoutes(Controller $controller, &$result)
     {
         $token = "Get actions of controller '" . $controller->uniqueId . "'";
         Yii::beginProfile($token, __METHOD__);
 
+        $total = 0;
         try {
-            $total = 0;
             $prefix = '/' . $controller->uniqueId . '/';
             foreach ($controller->actions() as $id => $value) {
                 $result[$prefix . $id] = $prefix . $id;
@@ -216,7 +217,7 @@ class RouteModel extends BaseObject
                     $name = strtolower(preg_replace('/(?<![A-Z])[A-Z]/', ' \0', substr($name, 6)));
                     $id = $prefix . ltrim(str_replace(' ', '-', $name), '-');
                     $result[$id] = $id;
-                    $total++;
+                    ++$total;
                 }
             }
         } catch (\Exception $exc) {
@@ -234,6 +235,7 @@ class RouteModel extends BaseObject
      * @param string $id
      * @param Module $module
      * @param mixed $result
+     * @return int
      */
     protected function getControllerActions($type, $id, Module $module, &$result)
     {
@@ -246,11 +248,10 @@ class RouteModel extends BaseObject
             $controller = Yii::createObject($type, [$id, $module]);
             $total = $this->getActionRoutes($controller, $result);
             if (!$total) {
-                return $total;
+                return 0;
             }
             $all = "/{$controller->uniqueId}/*";
             $result[$all] = $all;
-            ++$total;
         } catch (\Exception $exc) {
             Yii::error($exc->getMessage(), __METHOD__);
         }
@@ -266,6 +267,7 @@ class RouteModel extends BaseObject
      * @param string $namespace
      * @param string $prefix
      * @param mixed $result
+     * @return int
      */
     protected function getControllerFiles(Module $module, string $namespace, string $prefix, &$result)
     {
@@ -279,7 +281,6 @@ class RouteModel extends BaseObject
                 return 0;
             }
 
-            $total = 0;
             foreach (scandir($path) as $file) {
                 if ($file == '.' || $file == '..') {
                     continue;
@@ -291,7 +292,7 @@ class RouteModel extends BaseObject
                     $name = strtolower(preg_replace('/(?<![A-Z])[A-Z]/', ' \0', $baseName));
                     $id = ltrim(str_replace(' ', '-', $name), '-');
                     $className = $namespace . $baseName . 'Controller';
-                    if (strpos($className, '-') === false && class_exists($className) && is_subclass_of($className, 'yii\base\Controller')) {
+                    if (strpos($className, '-') === false && class_exists($className) && is_subclass_of($className, 'yii\web\Controller')) {
                         $total += $this->getControllerActions($className, $prefix . $id, $module, $result);
                     }
                 }
@@ -309,6 +310,7 @@ class RouteModel extends BaseObject
      *
      * @param Module $module
      * @param array $result
+     * @return int
      */
     protected function getRouteRecursive(Module $module, &$result)
     {
@@ -329,8 +331,9 @@ class RouteModel extends BaseObject
                 }
 
                 $namespace = trim($module->controllerNamespace, '\\') . '\\';
-                if (!$total && !$this->getControllerFiles($module, $namespace, '', $result)) {
-                    return $total;
+                $total += $this->getControllerFiles($module, $namespace, '', $result);
+                if (!$total) {
+                    return 0;
                 }
                 $all = '/' . ltrim($module->uniqueId . '/*', '/');
                 $result[$all] = $all;
